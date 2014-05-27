@@ -23,8 +23,9 @@ main (int argc, char *argv[])
 
   NSBox *box = [[NSBox alloc] initWithFrame:nswindow.frame];
   NSButton *nsbutton = [[NSButton alloc] initWithFrame:box.frame];
+  NSRect nsrect = [nswindow frame];
   NSGtkView *foo = [[NSGtkView alloc] initWithFrame:box.frame];
-  [box addSubview:foo];
+  [box setContentView:foo];
   [foo setNeedsDisplay:YES];
 
   // Create a GtkNSView. This is our NSView top-level

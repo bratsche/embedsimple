@@ -2,6 +2,25 @@
 
 @implementation NSGtkView
 
+static void update_allocation (GtkWidget *widget, NSGtkView *nsview)
+{
+  GdkScreen *screen = gtk_widget_get_screen (widget);
+  int height = gdk_screen_get_height (screen);
+  GtkAllocation allocation;
+  NSRect fr = [nsview frame];
+  NSRect rect = [nsview convertRect:fr toView:nsview];
+  NSPoint pt = [nsview convertPointFromBacking:rect.origin];
+
+  allocation.x = pt.x;
+  allocation.y = pt.y; // height - (int)pt.y - rect.size.height;
+  allocation.width = rect.size.width;
+  allocation.height = rect.size.height;
+
+  gtk_widget_size_allocate (widget, &allocation);
+
+  //g_print ("allocation [%d,%d,%d,%d]\n", allocation.x, allocation.y, allocation.width, allocation.height);
+}
+
 - (id)initWithFrame:(NSRect)frameRect
 {
   if ((self = [super initWithFrame:frameRect]) == nil)
@@ -20,18 +39,9 @@
   [super dealloc];
 }
 
-- (void)drawRect:(NSRect)rect
+- (void)viewWillDraw
 {
-  GtkAllocation allocation;
-
-  allocation.x = (int)rect.origin.x;
-  allocation.y = (int)(rect.origin.y);
-  allocation.width = rect.size.width;
-  allocation.height = rect.size.height;
-
-  gtk_widget_size_allocate (widget, &allocation);
-
-  gtk_widget_queue_draw (widget);
+  update_allocation (widget, self);
 }
 
 - (void)internalMouseEvent:(NSEvent *)evt
@@ -81,10 +91,20 @@
   parent = parent_widget;
 }
 
+static void
+queue_draw (GtkWidget *widget, NSGtkView *nsview)
+{
+  update_allocation (widget, nsview);
+  gtk_widget_queue_draw (widget);
+}
+
 - (void)setGtkWidget:(GtkWidget*)child_widget
 {
   widget = child_widget;
   gtk_container_add (GTK_CONTAINER (parent), child_widget);
+
+  g_signal_connect (widget, "realize", G_CALLBACK (queue_draw), self);
+
   setNeedsDisplay:YES;
 }
 
